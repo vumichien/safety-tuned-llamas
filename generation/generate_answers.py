@@ -5,8 +5,7 @@ import os.path as osp
 from typing import Union
 
 import torch
-from peft import PeftModel
-from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig, BitsAndBytesConfig
 from tqdm import tqdm
 
 from tap import Tap
@@ -28,9 +27,7 @@ except:  # noqa: E722
 # Arguments class
 class Arguments(Tap):
     ## Model parameters
-    base_model: str = "yahma/llama-7b-hf"
-    lora_weights: str = "safep/lora-alpaca-small-100-yahma"
-    load_8bit: bool = False
+    base_model: str = "aurora-m/Aurora-40k-hf"
     auth_token: str = ""
 
     ## Generation parameters
@@ -161,47 +158,18 @@ def main(args: Arguments):
 
     # Load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.base_model)
-    if device == "cuda":
-        model = AutoModelForCausalLM.from_pretrained(
-            args.base_model,
-            load_in_8bit=args.load_8bit,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            trust_remote_code=True,
-        )
-        model = PeftModel.from_pretrained(
-            model,
-            args.lora_weights,
-            torch_dtype=torch.float16,
-        )
-    elif device == "mps":
-        model = AutoModelForCausalLM.from_pretrained(
-            args.base_model,
-            device_map={"": device},
-            torch_dtype=torch.float16,
-            trust_remote_code=True,
-        )
-        model = PeftModel.from_pretrained(
-            model,
-            args.lora_weights,
-            device_map={"": device},
-            torch_dtype=torch.float16,
-        )
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.base_model,
-            device_map={"": device},
-            low_cpu_mem_usage=True,
-            trust_remote_code=True,
-        )
-        model = PeftModel.from_pretrained(
-            model,
-            args.lora_weights,
-            device_map={"": device},
-        )
 
-    if not args.load_8bit:
-        model.half()  # seems to fix bugs for some users.
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=False,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.float16
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(args.base_model, quantization_config=bnb_config,
+                      low_cpu_mem_usage=True, device_map={"":0})
+
+    model = model.eval()
 
     model.eval()
     if torch.__version__ >= "2" and sys.platform != "win32":
@@ -236,8 +204,6 @@ def main(args: Arguments):
                 "parameters": {
                     "model": args.base_model,
                     "prompt_template": args.prompt_template_path,
-                    "lora_weights": args.lora_weights,
-                    "load_8bit": args.load_8bit,
                 },
                 "inputs": inputs,
                 "instructions": instructions,
