@@ -180,7 +180,7 @@ def main(args: Arguments):
     for instruction, input in tqdm(
         zip(instructions, inputs),
         total=len(instructions),
-        desc=f"Evaluate {args.lora_weights}",
+        desc=f"Evaluate {args.base_model}",
     ):
         output = evaluate(
             model=model,
