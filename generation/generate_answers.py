@@ -193,7 +193,7 @@ def main(args: Arguments):
     # Save the outputs
     basename = os.path.basename(input_path)
 
-    output_path = os.path.join(args.output_path, args.lora_weights, basename)
+    output_path = os.path.join(args.output_path, args.base_model, basename)
     # Check if the output path directory exists
     if not os.path.exists(os.path.dirname(output_path)):
         os.makedirs(os.path.dirname(output_path))
