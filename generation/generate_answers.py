@@ -141,81 +141,80 @@ def main(args: Arguments):
     # Load the input data (.json)
     input_path_list = args.input_path
     for input_path in input_path_list:
-        print(input_path)
         with open(input_path) as f:
             input_data = json.load(f)
-        # instructions = input_data["instructions"]
-        # inputs = input_data["inputs"]
-        #
-        # # Validate the instructions and inputs
-        # if instructions is None:
-        #     raise ValueError("No instructions provided")
-        # if inputs is None or len(inputs) == 0:
-        #     inputs = [None] * len(instructions)
-        # elif len(instructions) != len(inputs):
-        #     raise ValueError(
-        #         f"Number of instructions ({len(instructions)}) does not match number of inputs ({len(inputs)})"
-        #     )
-        #
-        # # Load the prompt template
-        # prompter = Prompter(args.prompt_template_path)
-        #
-        # # Load the tokenizer and model
-        # tokenizer = AutoTokenizer.from_pretrained(args.base_model)
-        #
-        # bnb_config = BitsAndBytesConfig(
-        #     load_in_4bit=True,
-        #     bnb_4bit_use_double_quant=False,
-        #     bnb_4bit_quant_type="nf4",
-        #     bnb_4bit_compute_dtype=torch.float16
-        # )
-        #
-        # model = AutoModelForCausalLM.from_pretrained(args.base_model, quantization_config=bnb_config,
-        #                   low_cpu_mem_usage=True, device_map={"":0})
-        #
-        # model = model.eval()
-        #
-        # model.eval()
-        # if torch.__version__ >= "2" and sys.platform != "win32":
-        #     model = torch.compile(model)
-        #
-        # # Generate the outputs
-        # outputs = []
-        # for instruction, input in tqdm(
-        #     zip(instructions, inputs),
-        #     total=len(instructions),
-        #     desc=f"Evaluate {args.base_model}",
-        # ):
-        #     output = evaluate(
-        #         model=model,
-        #         tokenizer=tokenizer,
-        #         prompter=prompter,
-        #         instruction=instruction,
-        #     )
-        #     outputs.append(output)
-        #
-        # # Save the outputs
-        # basename = os.path.basename(input_path)
-        #
-        # output_path = os.path.join(args.output_path, args.base_model, basename)
-        # # Check if the output path directory exists
-        # if not os.path.exists(os.path.dirname(output_path)):
-        #     os.makedirs(os.path.dirname(output_path))
-        # # Save the outputs to the output path
-        # with open(output_path, "w") as f:
-        #     json.dump(
-        #         {
-        #             "parameters": {
-        #                 "model": args.base_model,
-        #                 "prompt_template": args.prompt_template_path,
-        #             },
-        #             "inputs": inputs,
-        #             "instructions": instructions,
-        #             "outputs": outputs,
-        #         },
-        #         f,
-        #         indent=4,
-        #     )
+        instructions = input_data["instructions"]
+        inputs = input_data["inputs"]
+
+        # Validate the instructions and inputs
+        if instructions is None:
+            raise ValueError("No instructions provided")
+        if inputs is None or len(inputs) == 0:
+            inputs = [None] * len(instructions)
+        elif len(instructions) != len(inputs):
+            raise ValueError(
+                f"Number of instructions ({len(instructions)}) does not match number of inputs ({len(inputs)})"
+            )
+
+        # Load the prompt template
+        prompter = Prompter(args.prompt_template_path)
+
+        # Load the tokenizer and model
+        tokenizer = AutoTokenizer.from_pretrained(args.base_model)
+
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=False,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16
+        )
+
+        model = AutoModelForCausalLM.from_pretrained(args.base_model, quantization_config=bnb_config,
+                          low_cpu_mem_usage=True, device_map={"":0})
+
+        model = model.eval()
+
+        model.eval()
+        if torch.__version__ >= "2" and sys.platform != "win32":
+            model = torch.compile(model)
+
+        # Generate the outputs
+        outputs = []
+        for instruction, input in tqdm(
+            zip(instructions, inputs),
+            total=len(instructions),
+            desc=f"Evaluate {args.base_model}",
+        ):
+            output = evaluate(
+                model=model,
+                tokenizer=tokenizer,
+                prompter=prompter,
+                instruction=instruction,
+            )
+            outputs.append(output)
+
+        # Save the outputs
+        basename = os.path.basename(input_path)
+
+        output_path = os.path.join(args.output_path, args.base_model, basename)
+        # Check if the output path directory exists
+        if not os.path.exists(os.path.dirname(output_path)):
+            os.makedirs(os.path.dirname(output_path))
+        # Save the outputs to the output path
+        with open(output_path, "w") as f:
+            json.dump(
+                {
+                    "parameters": {
+                        "model": args.base_model,
+                        "prompt_template": args.prompt_template_path,
+                    },
+                    "inputs": inputs,
+                    "instructions": instructions,
+                    "outputs": outputs,
+                },
+                f,
+                indent=4,
+            )
 
 
 if __name__ == "__main__":
