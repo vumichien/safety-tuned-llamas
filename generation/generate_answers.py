@@ -138,11 +138,35 @@ def evaluate(
 
 # Main function
 def main(args: Arguments):
+    # Load the tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained(args.base_model)
+
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=False,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.float16
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(args.base_model, quantization_config=bnb_config,
+                                                 low_cpu_mem_usage=True, device_map={"": 0})
+
+    model = model.eval()
+
+    model.eval()
+    if torch.__version__ >= "2" and sys.platform != "win32":
+        model = torch.compile(model)
+
+    # Load the prompt template
+    prompter = Prompter(args.prompt_template_path)
+
     # Load the input data (.json)
     input_path_list = args.input_path
+
     for input_path in input_path_list:
         with open(input_path) as f:
             input_data = json.load(f)
+
         instructions = input_data["instructions"]
         inputs = input_data["inputs"]
 
@@ -155,28 +179,6 @@ def main(args: Arguments):
             raise ValueError(
                 f"Number of instructions ({len(instructions)}) does not match number of inputs ({len(inputs)})"
             )
-
-        # Load the prompt template
-        prompter = Prompter(args.prompt_template_path)
-
-        # Load the tokenizer and model
-        tokenizer = AutoTokenizer.from_pretrained(args.base_model)
-
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=False,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.float16
-        )
-
-        model = AutoModelForCausalLM.from_pretrained(args.base_model, quantization_config=bnb_config,
-                          low_cpu_mem_usage=True, device_map={"":0})
-
-        model = model.eval()
-
-        model.eval()
-        if torch.__version__ >= "2" and sys.platform != "win32":
-            model = torch.compile(model)
 
         # Generate the outputs
         outputs = []
