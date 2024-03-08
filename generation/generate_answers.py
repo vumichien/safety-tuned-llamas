@@ -185,7 +185,7 @@ def main(args: Arguments):
         for instruction, input in tqdm(
             zip(instructions, inputs),
             total=len(instructions),
-            desc=f"Evaluate {args.base_model}",
+            desc=f"Evaluate {args.base_model} on {input_path}",
         ):
             output = evaluate(
                 model=model,
