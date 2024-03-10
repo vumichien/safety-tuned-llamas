@@ -167,6 +167,8 @@ def main(args: Arguments):
         with open(input_path) as f:
             input_data = json.load(f)
 
+        # Save the outputs
+        basename = os.path.basename(input_path)
         instructions = input_data["instructions"]
         inputs = input_data["inputs"]
 
@@ -185,7 +187,7 @@ def main(args: Arguments):
         for instruction, input in tqdm(
             zip(instructions, inputs),
             total=len(instructions),
-            desc=f"Evaluate {args.base_model} on {input_path}",
+            desc=f"Evaluate {os.path.basename(args.base_model)} on {basename}",
         ):
             output = evaluate(
                 model=model,
@@ -194,9 +196,6 @@ def main(args: Arguments):
                 instruction=instruction,
             )
             outputs.append(output)
-
-        # Save the outputs
-        basename = os.path.basename(input_path)
 
         output_path = os.path.join(args.output_path, args.base_model, basename)
         # Check if the output path directory exists
