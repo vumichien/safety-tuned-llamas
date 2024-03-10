@@ -187,7 +187,7 @@ def main(args: Arguments):
         for instruction, input in tqdm(
             zip(instructions, inputs),
             total=len(instructions),
-            desc=f"Evaluate {os.path.basename(args.base_model)} on {basename}",
+            desc=f"Evaluate {os.path.basename(args.base_model)} on {basename.split('.')[0]}",
         ):
             output = evaluate(
                 model=model,
